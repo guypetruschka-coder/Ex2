@@ -1,0 +1,30 @@
+Tests version: 6deea8ed5070
+======================
+===== EX2 TESTER =====
+======================
+
+
+===== EXTRACTING =====
+
+
+===== CHECKING FILES =====
+
+
+===== COPYING NECESSARY DIRECTORIES =====
+
+
+===== COMPILE CODE =====
+
+
+===== EXECUTE TESTS =====
+************************* Test 1: Game Doesn't Crash *************************
+Description: Runs your game for a few seconds, to see that it doesn't crash
+PASSED, Very Good!
+******************************************************************************
+
+
+==== CHECKING DOCUMENTATION ====
+
+
+
+You passed all the tests, GGWP
