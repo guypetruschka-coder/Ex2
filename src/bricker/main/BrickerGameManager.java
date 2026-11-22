@@ -146,7 +146,6 @@ public class BrickerGameManager extends GameManager {
 			handleGameEnd(WIN_PROMPT);
 		}
 	}
-	//
 
 	private void handleGameEnd(String prompt) {
 		if (windowController.openYesNoDialog(prompt)) {
