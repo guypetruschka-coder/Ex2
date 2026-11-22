@@ -1,7 +1,7 @@
 package bricker.main;
 
-import bricker.brick_strategies.BasicCollisionStrategy;
 import bricker.brick_strategies.CollisionStrategy;
+import bricker.brick_strategies.CollisionStrategyFactory;
 import bricker.gameobjects.Ball;
 import bricker.gameobjects.Brick;
 import bricker.gameobjects.GraphicLifeCounter;
@@ -34,6 +34,7 @@ public class BrickerGameManager extends GameManager {
 	private static final float WINDOW_HEIGHT = 500f;
 	private static final float WALL_THICKNESS = 10f;
 	private static final float BALL_SIZE = 20f;
+	private static final float PUCK_SIZE_RATIO = 0.75f;
 	private static final float BALL_SPEED = 200f;
 	private static final float PADDLE_WIDTH = 100f;
 	private static final float PADDLE_HEIGHT = 15f;
@@ -50,13 +51,16 @@ public class BrickerGameManager extends GameManager {
 	private static final int BRICK_ROWS_INDEX = 1;
 	private static final int INITIAL_LIVES = 3;
 	private static final int MAX_LIVES = 4;
+	private static final String MAIN_PADDLE_TAG = "mainPaddle";
 	private static final String WIN_PROMPT = "You win! Play again?";
 	private static final String LOSE_PROMPT = "You lose! Play again?";
 
 	// paths
 	private static final String DARK_IMAGE_PATH = "assets/DARK_BG2_small.jpeg";
 	private static final String BALL_IMAGE_PATH = "assets/ball.png";
+	private static final String PUCK_IMAGE_PATH = "assets/mockBall.png";
 	private static final String BLOP_SOUND_PATH = "assets/blop.wav";
+	private static final String EXPLOSION_SOUND_PATH = "assets/explosion.wav";
 	private static final String PADDLE_IMAGE_PATH = "assets/paddle.png";
 	private static final String BRICK_IMAGE_PATH = "assets/brick.png";
 	private static final String HEART_IMAGE_PATH = "assets/heart.png";
@@ -102,8 +106,8 @@ public class BrickerGameManager extends GameManager {
 	}
 
 	/**
-	 * Initializes the game by creating the background, walls, ball, paddle, bricks,
-	 * and life counters.
+	 * Initializes the game by creating the background, walls, ball, paddle, life counters,
+	 * and bricks.
 	 *
 	 * @param imageReader      Contains a single method: readImage, which reads an image from disk.
 	 * @param soundReader      Contains a single method: readSound, which reads a wav file from disk.
@@ -123,8 +127,8 @@ public class BrickerGameManager extends GameManager {
 		createWalls();
 		createBall(imageReader, soundReader);
 		createPaddle(imageReader, inputListener);
-		createBricks(imageReader);
 		createLivesCounters(imageReader);
+		createBricks(imageReader, soundReader);
 	}
 
 	/**
@@ -218,36 +222,63 @@ public class BrickerGameManager extends GameManager {
 		Vector2 paddleDimensions = new Vector2(PADDLE_WIDTH, PADDLE_HEIGHT);
 		Paddle paddle = new Paddle(Vector2.ZERO, paddleDimensions, paddleImage, inputListener,
 				windowDimensions, (int) WALL_THICKNESS);
+		paddle.setTag(MAIN_PADDLE_TAG);
 		paddle.setCenter(new Vector2(windowDimensions.mult(MID_FACTOR).x(),
 				windowDimensions.y() - PADDLE_BOTTOM_OFFSET));
 
 		gameObjects().addGameObject(paddle, Layer.DEFAULT);
 	}
 
-	private void createBricks(ImageReader imageReader) {
+	private void createBricks(ImageReader imageReader, SoundReader soundReader) {
 		Renderable brickImage = imageReader.readImage(BRICK_IMAGE_PATH, false);
 		float totalAvailableWidth = windowDimensions.x() - 2 * WALL_THICKNESS
-				- (amountOfBricksInRow + 1) * BRICK_SPACING; // Need to count for the thickness
-		// of the left and right wall and the space inbetween bricks (Also left to the most left
-		// brick and right to the most right brick)
+				- (amountOfBricksInRow + 1) * BRICK_SPACING;
 		float brickWidth = totalAvailableWidth / amountOfBricksInRow;
 		Vector2 brickDimensions = new Vector2(brickWidth, BRICK_HEIGHT);
+
 		this.bricksCounter = new Counter(0);
-		CollisionStrategy collisionStrategy = new BasicCollisionStrategy(gameObjects(),
-				bricksCounter);
+		Brick[][] bricksGrid = new Brick[brickRows][amountOfBricksInRow];
+		CollisionStrategyFactory strategyFactory = createStrategyFactory(
+				imageReader, soundReader, bricksGrid);
 
 		for (int r = 0; r < brickRows; r++) {
 			for (int c = 0; c < amountOfBricksInRow; c++) {
 				float x = WALL_THICKNESS + BRICK_SPACING + c * (brickWidth + BRICK_SPACING);
 				float y = WALL_THICKNESS + BRICK_SPACING + r * (BRICK_HEIGHT + BRICK_SPACING);
 				Vector2 brickLocation = new Vector2(x, y);
+				CollisionStrategy collisionStrategy = strategyFactory.getStrategy();
 				Brick brick = new Brick(brickLocation, brickDimensions, brickImage,
 						collisionStrategy, r, c);
 
+				bricksGrid[r][c] = brick;
 				gameObjects().addGameObject(brick, Layer.STATIC_OBJECTS);
 				bricksCounter.increment();
 			}
 		}
+	}
+
+	private CollisionStrategyFactory createStrategyFactory(ImageReader imageReader,
+														   SoundReader soundReader,
+														   Brick[][] bricksGrid) {
+		Renderable puckImage = imageReader.readImage(PUCK_IMAGE_PATH, true);
+		Sound collisionSound = soundReader.readSound(BLOP_SOUND_PATH);
+		Vector2 puckDimensions = Vector2.ONES.mult(BALL_SIZE * PUCK_SIZE_RATIO);
+
+		Renderable paddleImage = imageReader.readImage(PADDLE_IMAGE_PATH, true);
+		Vector2 paddleDimensions = new Vector2(PADDLE_WIDTH, PADDLE_HEIGHT);
+
+		Sound explosionSound = soundReader.readSound(EXPLOSION_SOUND_PATH);
+
+		Renderable heartImage = imageReader.readImage(HEART_IMAGE_PATH, true);
+		Vector2 heartDimensions = Vector2.ONES.mult(HEART_SIZE);
+
+		return new CollisionStrategyFactory(
+				gameObjects(), bricksCounter, windowDimensions,
+				puckImage, collisionSound, puckDimensions, BALL_SPEED,
+				paddleImage, paddleDimensions, inputListener, (int) WALL_THICKNESS,
+				bricksGrid, explosionSound,
+				heartImage, heartDimensions, lives, MAIN_PADDLE_TAG
+		);
 	}
 
 	private void createLivesCounters(ImageReader imageReader) {
