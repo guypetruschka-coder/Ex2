@@ -15,6 +15,8 @@ public class Brick extends GameObject {
 	private final int row;
 	private final int col;
 
+	private boolean isBroken = false;
+
 	/**
 	 * Constructs a new Brick instance.
 	 *
@@ -61,6 +63,10 @@ public class Brick extends GameObject {
 	@Override
 	public void onCollisionEnter(GameObject other, Collision collision) {
 		super.onCollisionEnter(other, collision);
+		if (isBroken) {
+			return;
+		}
+		isBroken = true;
 		this.collisionStrategy.onCollision(this, other);
 	}
 }

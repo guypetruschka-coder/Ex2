@@ -44,7 +44,6 @@ public class Paddle extends GameObject {
 	 */
 	@Override
 	public void update(float deltaTime) {
-		super.update(deltaTime);
 		Vector2 movementDirection = Vector2.ZERO;
 
 		if (inputListener.isKeyPressed(KeyEvent.VK_LEFT)) {
@@ -55,16 +54,15 @@ public class Paddle extends GameObject {
 		}
 
 		setVelocity(movementDirection.mult(MOVEMENT_SPEED));
+		super.update(deltaTime);
 
 		float maxRightX = windowDimensions.x() - minDistFromEdge - getDimensions().x();
 		float x = getTopLeftCorner().x();
 
 		if (x < minDistFromEdge) {
-			Vector2 leftEdgeLocation = new Vector2(minDistFromEdge, getTopLeftCorner().y());
-			setTopLeftCorner(leftEdgeLocation);
+			setTopLeftCorner(new Vector2(minDistFromEdge, getTopLeftCorner().y()));
 		} else if (x > maxRightX) {
-			Vector2 rightEdgeLocation = new Vector2(maxRightX, getTopLeftCorner().y());
-			setTopLeftCorner(rightEdgeLocation);
+			setTopLeftCorner(new Vector2(maxRightX, getTopLeftCorner().y()));
 		}
 	}
 }
